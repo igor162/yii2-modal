@@ -10,7 +10,8 @@ namespace igor162\modal;
 use Yii;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
-use yii\bootstrap\Modal as ModalWidget;
+use yii\bootstrap\Widget as BootstrapWidget;
+use kartik\icons\Icon;
 
 /**
  * Modal renders a modal window that can be toggled by clicking on a button.
@@ -20,8 +21,24 @@ use yii\bootstrap\Modal as ModalWidget;
  *
  * ~~~php
  * Modal::begin([
+ *     'typeModal' => Modal::TYPE_DEFAULT,
  *     'header' => '<h2>Hello world</h2>',
+ *     'footerButton' => [
+ *              'encode' => false,
+ *              'labelDelete' => [
+ *                     'label' => Icon::show('exclamation-triangle', ['class' => 'fa-lg']).Yii::t('app', 'Delete'),
+ *                     'class' => Modal::STYLE_DANGER,
+ *                     ],
+ *               'labelCancel' => [
+ *                      'label' => Yii::t('app', 'Cancel'),
+ *                      'class' => Modal::STYLE_PRIMARY,
+ *                      ],
+ *                  ],
  *     'toggleButton' => ['label' => 'click me'],
+ *     'headerIcon' => Icon::show('exclamation-triangle', ['class' => 'fa-lg']),
+ *     'headerOptions' => ['class' => 'box-header with-border'],
+ *     'bodyOptions' => ['class' => 'box-body'],
+
  * ]);
  *
  * echo 'Say hello...';
@@ -34,8 +51,36 @@ use yii\bootstrap\Modal as ModalWidget;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Modal extends ModalWidget
+
+/**
+ * Class Modal
+ * @package igor162\modal
+ *
+ * @property array $options
+ * @property string $contentOptions
+ * @property string $typeModal
+ * @property string $header
+ * @property string $bodyOptions
+ * @property string $headerOptions
+ * @property string $headerIcon
+ * @property array $footerButton
+ * @property string $footerOptions
+ * @property string $size
+ * @property array $closeButton
+ * @property string $toggleButton
+ * @property array $buttonRemoveConfig
+ * @property array $buttonCancelConfig
+ *
+ */
+class Modal extends BootstrapWidget
 {
+    /**
+     * @var array the HTML attributes for the container tag of the list view.
+     * The "tag" element specifies the tag name of the container element and defaults to "div".
+     * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     */
+    public $options = [];
+
     const SIZE_LARGE = "modal-lg";
     const SIZE_SMALL = "modal-sm";
     const SIZE_DEFAULT = "";
@@ -43,25 +88,35 @@ class Modal extends ModalWidget
     const TYPE_DEFAULT = '';
     const TYPE_SUCCESS = 'box-success';
     const TYPE_WARNING = 'box-warning';
-    const TYPE_DANGER  = 'box-danger';
+    const TYPE_DANGER = 'box-danger';
     const TYPE_PRIMARY = 'box-primary';
+
+    const STYLE_DEFAULT = 'btn btn-default';
+    const STYLE_SUCCESS = 'btn btn-success';
+    const STYLE_WARNING = 'btn btn-warning';
+    const STYLE_DANGER = 'btn btn-danger';
+    const STYLE_PRIMARY = 'btn btn-primary';
 
     public $contentOptions;
 
+    public $typeModal;
     /**
      * @var string the header content in the modal window.
      */
     public $header;
+
+    public $bodyOptions;
     /**
      * @var string additional header options
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      * @since 2.0.1
      */
     public $headerOptions;
+    public $headerIcon;
     /**
-     * @var string the footer content in the modal window.
+     * @var array the footer content in the modal window.
      */
-    public $footer;
+    public $footerButton;
     /**
      * @var string additional footer options
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
@@ -103,6 +158,18 @@ class Modal extends ModalWidget
      */
     public $toggleButton = false;
 
+    /** @var array Default config for the remove button*/
+    public $buttonRemoveConfig = [
+        'class' => self::STYLE_DANGER,
+        'data-action' => 'confirm',
+        'data-dismiss' => 'modal',
+    ];
+
+    /** @var array Default config for the cancel button*/
+    public $buttonCancelConfig = [
+        'class' => self::STYLE_DEFAULT,
+        'data-dismiss' => 'modal',
+    ];
 
     /**
      * Initializes the widget.
@@ -113,10 +180,12 @@ class Modal extends ModalWidget
 
         $this->initOptions();
 
+        $configContent = isset($this->typeModal) ? $this->typeModal . ' box box-solid' : 'modal-content';
+
         echo $this->renderToggleButton() . "\n";
         echo Html::beginTag('div', $this->options) . "\n";
         echo Html::beginTag('div', ['class' => 'modal-dialog ' . $this->size]) . "\n";
-        echo Html::beginTag('div', ['class' => 'modal-content']) . "\n";
+        echo Html::beginTag('div', ['class' => $configContent]) . "\n";
         echo $this->renderHeader() . "\n";
         echo $this->renderBodyBegin() . "\n";
     }
@@ -143,7 +212,8 @@ class Modal extends ModalWidget
     {
         $button = $this->renderCloseButton();
         if ($button !== null) {
-            $this->header = $button . "\n" . $this->header;
+            $headerIcon = isset($this->headerIcon) ? $this->headerIcon : '';
+            $this->header = $headerIcon . "\n" . $this->header . "\n" . $button;
         }
         if ($this->header !== null) {
             Html::addCssClass($this->headerOptions, ['widget' => 'modal-header']);
@@ -159,7 +229,9 @@ class Modal extends ModalWidget
      */
     protected function renderBodyBegin()
     {
-        return Html::beginTag('div', ['class' => 'modal-body']);
+        $configContent = isset($this->bodyOptions) ? $this->bodyOptions : 'modal-body';
+
+        return Html::beginTag('div', ['class' => $configContent]);
     }
 
     /**
@@ -177,9 +249,10 @@ class Modal extends ModalWidget
      */
     protected function renderFooter()
     {
-        if ($this->footer !== null) {
+        if ($this->footerButton !== null) {
             Html::addCssClass($this->footerOptions, ['widget' => 'modal-footer']);
-            return Html::tag('div', "\n" . $this->footer . "\n", $this->footerOptions);
+            $removeCancelButton = $this->renderRemoveCancelButton();
+            return Html::tag('div', "\n" . $removeCancelButton . "\n", $this->footerOptions);
         } else {
             return null;
         }
@@ -217,9 +290,67 @@ class Modal extends ModalWidget
                 $closeButton['type'] = 'button';
             }
 
-            return Html::tag($tag, $label, $closeButton);
+            $html = Html::beginTag("div", ["class" => "box-tools pull-right"]);
+            $html .= Html::tag($tag, Icon::show('times'), $closeButton);
+            $html .= Html::endTag("div");
+            return $html;
+
         } else {
             return null;
+        }
+    }
+
+    /**
+     * Renders the remove and cancel button.
+     * @return string the rendering result
+     */
+    protected function renderRemoveCancelButton()
+    {
+
+        if (($footerButton = $this->footerButton) !== false) {
+
+            $html = '';
+
+            $encode = isset($footerButton['encode']) ? $footerButton['encode'] : false;
+
+            if (!empty($labelDelete = $footerButton['labelDelete'])) {
+                $label = ($encode === false)  ? Html::encode($labelDelete['label']): $labelDelete['label'];
+                $class = !empty($class = ArrayHelper::getValue($labelDelete, 'class')) ? $class : $this->styleModel();
+                ArrayHelper::remove($this->buttonRemoveConfig, 'class');
+                $this->buttonRemoveConfig['class'] = $class;
+                $html .= Html::button($label, $this->buttonRemoveConfig) . "\n";
+            }
+
+            if (!empty($labelCancel = $footerButton['labelCancel'])) {
+                $label = ($encode === false)  ? Html::encode($labelCancel['label']): $labelCancel['label'];
+                $class = !empty($class = ArrayHelper::getValue($labelCancel, 'class')) ? $class : self::STYLE_DEFAULT;
+                ArrayHelper::remove($this->buttonRemoveConfig, 'class');
+                $this->buttonCancelConfig['class'] = $class;
+                $html .= Html::button($label, $this->buttonCancelConfig);
+            }
+
+            return $html;
+
+            } else {
+            return null;
+        }
+    }
+
+    /**
+     * @return string
+     */
+    protected function styleModel()
+    {
+        if ($this->typeModal == self::TYPE_SUCCESS) {
+            return self::STYLE_SUCCESS;
+        } else if ($this->typeModal == self::TYPE_WARNING) {
+            return self::STYLE_WARNING;
+        } else if ($this->typeModal == self::TYPE_DANGER) {
+            return self::STYLE_DANGER;
+        } else if ($this->typeModal == self::TYPE_PRIMARY) {
+            return self::STYLE_PRIMARY;
+        } else {
+            return self::STYLE_DEFAULT;
         }
     }
 
@@ -244,7 +375,7 @@ class Modal extends ModalWidget
             $this->closeButton = array_merge([
                 'data-dismiss' => 'modal',
                 'aria-hidden' => 'true',
-                'class' => 'close',
+                'class' => 'btn btn-box-tool',
             ], $this->closeButton);
         }
 
@@ -257,4 +388,5 @@ class Modal extends ModalWidget
             }
         }
     }
+
 }
