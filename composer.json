@@ -1,0 +1,21 @@
+{
+    "name": "igor162/yii2-modal",
+    "description": "modal widget for yii2",
+    "type": "yii2-extension",
+    "keywords": ["yii2","modal","widget"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Igor Fandyuhin",
+            "email": "igor162@ya.ru"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "igor162\\modal\\": ""
+        }
+    }
+}
